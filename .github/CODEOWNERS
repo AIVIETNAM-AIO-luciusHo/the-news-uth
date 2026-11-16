@@ -1,0 +1,11 @@
+# Last matching pattern wins. Any one listed owner can satisfy the code-owner review.
+# Add module owners below once the team confirms the assignment (see docs/roadmap.md).
+*                 @AIVIETNAM-AIO-luciusHo @nguyenlongvy3110
+
+# Governance, CI, Spec Kit and database changes need a lead.
+/.github/         @AIVIETNAM-AIO-luciusHo @nguyenlongvy3110
+/.specify/        @AIVIETNAM-AIO-luciusHo @nguyenlongvy3110
+/.agents/         @AIVIETNAM-AIO-luciusHo @nguyenlongvy3110
+/database/        @AIVIETNAM-AIO-luciusHo @nguyenlongvy3110
+/config/          @AIVIETNAM-AIO-luciusHo @nguyenlongvy3110
+/app/core/        @AIVIETNAM-AIO-luciusHo @nguyenlongvy3110

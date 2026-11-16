@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MAX_PR_FILES: 15
+
+jobs:
+  hygiene:
+    name: PR size & hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Whitespace errors
+        if: github.event_name == 'pull_request'
+        run: git diff --check "origin/${{ github.base_ref }}...HEAD"
+      - name: At most ${{ env.MAX_PR_FILES }} changed files
+        if: github.event_name == 'pull_request'
+        run: |
+          count=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" | wc -l)
+          echo "Changed files: $count (limit $MAX_PR_FILES)"
+          [ "$count" -le "$MAX_PR_FILES" ] || { echo "::error::PR changes $count files; split it into stacked PRs of <= $MAX_PR_FILES"; exit 1; }
+      - name: No local config, secrets or private docs tracked
+        run: |
+          bad=$(git ls-files | grep -E '(^|/)(config\.local\.php|\.env(\..*)?|mysql\.local\.env)$|^docs-local/|^uploads/|:Zone\.Identifier$|\.log$' | grep -v '\.env\.example$' || true)
+          [ -z "$bad" ] || { echo "::error::Forbidden tracked files:"; echo "$bad"; exit 1; }
+
+  php:
+    name: PHP lint & smoke
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: ci_root_only
+          MYSQL_DATABASE: news_uth_ci
+          MYSQL_USER: news_uth
+          MYSQL_PASSWORD: ci_app_only
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci_root_only"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql
+          coverage: none
+      - name: php -l
+        run: find app config public views docs/test -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Create config and import schema, then seed
+        env:
+          MYSQL_PWD: ci_app_only
+        run: |
+          cat > config/config.local.php <<'PHP'
+          <?php
+          return ['database' => ['host' => '127.0.0.1', 'port' => 3306, 'name' => 'news_uth_ci', 'username' => 'news_uth', 'password' => 'ci_app_only']];
+          PHP
+          mysql -h 127.0.0.1 -u news_uth news_uth_ci < database/schema.sql
+          mysql -h 127.0.0.1 -u news_uth news_uth_ci < database/seed.sql
+      - name: Database checks
+        run: php docs/test/check-database.php
+      - name: Start dev server
+        run: |
+          php -S 127.0.0.1:8080 -t public public/index.php > /tmp/php-server.log 2>&1 &
+          for i in $(seq 1 20); do curl -s -o /dev/null http://127.0.0.1:8080/admin/login && exit 0; sleep 1; done
+          cat /tmp/php-server.log; exit 1
+      - name: HTTP checks
+        run: python3 docs/test/check-http.py http://127.0.0.1:8080
+      - name: Safe error pages
+        run: python3 docs/test/check-errors.py http://127.0.0.1:8080
