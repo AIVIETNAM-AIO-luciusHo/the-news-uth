@@ -1,0 +1,27 @@
+# Local configuration and credentials
+/config/config.local.php
+.env
+.env.*
+!.env.example
+
+# Dependencies and runtime artifacts
+/vendor/
+/node_modules/
+/uploads/
+*.log
+*.cache
+*.env
+*.tmp
+*.swp
+.vscode/
+.idea/
+
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Local-only docs and agent guidance
+/docs-local/
+/AGENTS.md
+/CLAUDE.md
