@@ -1,0 +1,13 @@
+.git/
+.agents/
+.codex/
+docs-local/
+config/config.local.php
+.env*
+vendor/
+node_modules/
+uploads/
+coverage/
+*.log*
+Dockerfile*
+.dockerignore
