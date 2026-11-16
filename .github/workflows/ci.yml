@@ -75,7 +75,7 @@ jobs:
         run: php docs/test/check-database.php
       - name: Start dev server
         run: |
-          php -S 127.0.0.1:8080 -t public public/index.php > /tmp/php-server.log 2>&1 &
+          php -d opcache.enable=0 -d opcache.enable_cli=0 -S 127.0.0.1:8080 -t public public/index.php > /tmp/php-server.log 2>&1 &
           for i in $(seq 1 20); do curl -s -o /dev/null http://127.0.0.1:8080/admin/login && exit 0; sleep 1; done
           cat /tmp/php-server.log; exit 1
       - name: HTTP checks
