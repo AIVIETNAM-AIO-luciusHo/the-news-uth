@@ -20,7 +20,7 @@ jobs:
     name: PR size & hygiene
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Whitespace errors
@@ -53,7 +53,7 @@ jobs:
           --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci_root_only"
           --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
